@@ -19,13 +19,14 @@ export const styles = StyleSheet.create({
   subtitle: {
     fontSize: 24,
     marginBottom: 10,
-    marginTop: 20,
+    marginTop: 10,
   },
   scanButton: {
     backgroundColor: '#2196F3',
     padding: 10,
     borderRadius: 5,
-    marginBottom: 20,
+    marginVertical: 20,
+
   },
   scanButtonText: {
     color: 'white',

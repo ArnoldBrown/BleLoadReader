@@ -17,6 +17,10 @@ import { styles } from './src/styles/styles';
 import { DeviceList } from './src/DeviceList';
 import BleManager from 'react-native-ble-manager';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
+import Toast from 'react-native-toast-message';
+import LottieView from 'lottie-react-native';
+import LoadingAnim from './src/components/LoadingAnim';
+import ConnexAnim from './src/components/ConnexAnim';
 
 const BleManagerModule = NativeModules.BleManager;
 const BleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -32,6 +36,27 @@ const App = () => {
   const WEIGHT_SERVICE_UUID = '4fafc200-1fb5-459e-8fcc-c5c9c331914b';
   const BLE_DESCRIPTOR = '00002902-0000-1000-8000-00805f9b34fb';
   const BLE_PORT = '0100';
+
+
+  const isDarkMode = useColorScheme() === 'dark';
+  const backgroundStyle = {
+    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  };
+
+  const showToast = (type, title, msg) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: msg,
+    });
+  };
+
+  const renderEmptyList = () => {
+    return (<View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+      <Text style={{ color: 'grey' }}>No Bluetooth devices found</Text>
+    </View>
+    )
+  }
 
   const handleLocationPermission = async () => {
     if (Platform.OS === 'android' && Platform.Version >= 23) {
@@ -51,6 +76,7 @@ const App = () => {
             result['android.permission.ACCESS_FINE_LOCATION'] === 'never_ask_again')
         ) {
           console.log('User accepted');
+          showToast("success", "Ble Weighing", "User accepted");
         } else {
           console.log('User refused');
         }
@@ -127,7 +153,7 @@ const App = () => {
     }
   };
 
-//CONNECT-DEVICE//
+  //CONNECT-DEVICE//
   const connect = peripheral => {
     BleManager.createBond(peripheral.id)
       .then(() => {
@@ -141,6 +167,7 @@ const App = () => {
         setDiscoveredDevices(Array.from(devices));
         setDevice(devices);
         console.log('BLE device connected successfully');
+        showToast("success", "Ble Weighing", "BLE device connected successfully");
       })
       .then(data => {
         console.log('Read data:', data); // Data read from the characteristic
@@ -174,6 +201,7 @@ const App = () => {
       BleManager.startNotification(device[0].id, WEIGHT_SERVICE_UUID, WEIGHT_CHARACTERISTIC_UUID)
         .then(() => {
           console.log('Notification started');
+          showToast("success", "Ble Weighing", "Notification started");
           // resolve();
         })
         .catch((error) => {
@@ -185,24 +213,19 @@ const App = () => {
 
   //START-READ//
   const startRead = () => {
-    if(device !== null){
+    if (device !== null) {
       BleManager.read(device[0].id, WEIGHT_SERVICE_UUID, WEIGHT_CHARACTERISTIC_UUID)
-      .then((data) => {
-        const decodedData = data.map(code => String.fromCharCode(code)).join('');
-        setWeight(decodedData);
-        console.log('Read: ', weight);
-      })
-      .catch((error) => {
-        console.log(error);
-        reject(error);
-      });
-    } 
+        .then((data) => {
+          const decodedData = data.map(code => String.fromCharCode(code)).join('');
+          setWeight(decodedData);
+          console.log('Read: ', weight);
+        })
+        .catch((error) => {
+          console.log(error);
+          reject(error);
+        });
+    }
   }
-
-  const isDarkMode = useColorScheme() === 'dark';
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
 
   return (
     <SafeAreaView style={[backgroundStyle, styles.container]}>
@@ -210,69 +233,71 @@ const App = () => {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <View style={{ paddingHorizontal: 20 }}>
-        <Text
-          style={[
-            styles.title,
-            { color: isDarkMode ? Colors.white : Colors.black },
-          ]}>
-          BLE
-        </Text>
-        <TouchableOpacity
-          onPress={() => scan()}
-          activeOpacity={0.5}
-          style={styles.scanButton}>
-          <Text style={styles.scanButtonText}>
-            {isScanning ? 'Scanning...' : 'Scan Bluetooth Devices'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => startNotify()} style={{ backgroundColor: 'green', padding: 5, borderRadius: 5, justifyContent: 'center' }}>
-            <Text style={{ color: 'white' }}>Notify</Text>
+      <View style={{ flex: 1, margin: 5, flexDirection: 'column' }}>
+        <View style={{ flex: 0.3 }}>
+          <Text style={{ textAlign: 'center', marginTop: 10, fontSize: 25 }}>BlueTooth DataBooth</Text>
+          <TouchableOpacity
+            onPress={() => scan()}
+            activeOpacity={0.5}
+            style={styles.scanButton}>
+            <Text style={styles.scanButtonText}>
+              {isScanning ? 'Scanning...' : 'Scan Bluetooth Devices'}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => startRead()} style={{ backgroundColor: 'blue', padding: 5, marginLeft: 10, borderRadius: 5, justifyContent: 'center' }}>
-            <Text style={{ color: 'white' }}>Read</Text>
-          </TouchableOpacity>
-
-          <Text style={{ marginLeft: 10, padding: 5, }}>Weight : <Text style={{ fontWeight: 900, fontSize: 40 }}>{weight}</Text></Text>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={() => startNotify()} style={{ backgroundColor: 'green', height: 50, width: 50, borderRadius: 25, justifyContent: 'center' }}>
+              <Text style={{ color: 'white', textAlign: 'center' }}>Notify</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => startRead()} style={{ backgroundColor: 'blue', height: 50, width: 50, borderRadius: 25, marginLeft: 10, justifyContent: 'center' }}>
+              <Text style={{ color: 'white', textAlign: 'center' }}>Read</Text>
+            </TouchableOpacity>
+            {weight !== null ? <Text style={{ marginLeft: 10, padding: 5, }}>Weight <Text style={{ fontWeight: 900, fontSize: 40 }}>{weight}</Text></Text>
+              : null}
+          </View>
         </View>
 
-        <Text
-          style={[
-            styles.subtitle,
-            { color: isDarkMode ? Colors.white : Colors.black },
-          ]}>
-          Discovered Devices:
-        </Text>
-        {discoveredDevices.length > 0 ? (
-          <FlatList
-            style={{ height: 180 }}
-            data={discoveredDevices}
-            renderItem={({ item }) => (
-              <DeviceList
-                peripheral={item}
-                connect={connect}
-                disconnect={disconnect}
-              />
-            )}
-            keyExtractor={item => item.id}
-          />
-        ) : (
-          <Text style={styles.noDevicesText}>No Bluetooth devices found</Text>
-        )}
+        <View style={{ flex: 0.4 }}>
+          <Text
+            style={[
+              styles.subtitle,
+              { color: isDarkMode ? Colors.white : Colors.black },
+            ]}>
+            Discovered Devices:
+          </Text>
+          {isScanning ? <LoadingAnim /> : null}
 
-        <Text
-          style={[
-            styles.subtitle,
-            { color: isDarkMode ? Colors.white : Colors.black },
-          ]}>
-          Connected Devices:
-        </Text>
-        {connectedDevices.length > 0 ? (
+          {!isScanning ? (
+            <FlatList
+              style={{ flex:1}}
+              data={discoveredDevices}
+              ListEmptyComponent={renderEmptyList}
+              renderItem={({ item }) => (
+                <DeviceList
+                  peripheral={item}
+                  connect={connect}
+                  disconnect={disconnect}
+                />
+              )}
+              keyExtractor={item => item.id}
+            />
+          ) : null}
+
+        </View>
+
+        <View style={{ flex: 0.3 }}>
+          <Text
+            style={[
+              styles.subtitle,
+              { color: isDarkMode ? Colors.white : Colors.black },
+            ]}>
+            Connected Devices:
+          </Text>
+
+          {connectedDevices.length > 0 ? (
           <FlatList
             style={{ height: 180 }}
             data={connectedDevices}
+            ListEmptyComponent={renderEmptyList}
             renderItem={({ item }) => (
               <DeviceList
                 peripheral={item}
@@ -282,9 +307,12 @@ const App = () => {
             )}
             keyExtractor={item => item.id}
           />
-        ) : (
+        ) : 
+        
           <Text style={styles.noDevicesText}>No connected devices</Text>
-        )}
+        }
+        </View>
+
       </View>
     </SafeAreaView>
   );
