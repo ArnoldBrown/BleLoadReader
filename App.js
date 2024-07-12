@@ -58,6 +58,58 @@ const App = () => {
     )
   }
 
+  useEffect(() => {
+    const bleManagerEmitter = new NativeEventEmitter(NativeModules.BleManager);
+    const handleUpdate = (data) => {
+      if (data.characteristic === WEIGHT_CHARACTERISTIC_UUID) {
+        const decodedData = data.value.map(code => String.fromCharCode(code)).join('');
+        setWeight(decodedData);
+        console.log('Received notification: ', decodedData);
+      }
+    };
+
+    bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdate);
+
+    return () => {
+      bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdate);
+    };
+  }, []);
+
+//   useEffect(() => {
+//  AsyncStorage.getItem("@peripheral").then((data) => {
+//           var periInfo = JSON.parse(data);
+//           console.log("periInfoooo",periInfo);
+         
+//         });
+//   },[]);
+
+// const storeData = async (key, value) => {
+//   try {
+//       await AsyncStorage.setItem(key, value);
+//       console.log('Data stored successfully!');
+//   } catch (e) {
+//       console.error('Error storing data:', e);
+//   }
+// };
+
+// const getData = async (key) => {
+//   try {
+//       const value = await AsyncStorage.getItem(key);
+//       if (value !== null) {
+//           // Data found
+//           console.log('Retrieved data:', value);
+//           return value;
+//       } else {
+//           // Data not found
+//           console.log('No data found with key:', key);
+//           return null;
+//       }
+//   } catch (e) {
+//       console.error('Error retrieving data:', e);
+//       return null;
+//   }
+// };
+
   const handleLocationPermission = async () => {
     if (Platform.OS === 'android' && Platform.Version >= 23) {
 
@@ -76,7 +128,12 @@ const App = () => {
             result['android.permission.ACCESS_FINE_LOCATION'] === 'never_ask_again')
         ) {
           console.log('User accepted');
-          showToast("success", "Ble Weighing", "User accepted");
+          showToast("success", "Ble Weighing", "User accepted");  
+          // console.log("dvdsvd",getData('@isStored'));
+          // AsyncStorage.getItem("@peripheral").then((data) => {
+          //   var periInfo = JSON.parse(data);
+          //   console.log("periInfoooo",periInfo);
+          // });
         } else {
           console.log('User refused');
         }
@@ -168,6 +225,18 @@ const App = () => {
         setDevice(devices);
         console.log('BLE device connected successfully');
         showToast("success", "Ble Weighing", "BLE device connected successfully");
+        // if(AsyncStorage.getItem("@isStored") === undefined || AsyncStorage.getItem("@isStored") === "false"){
+        //   storeData('@isStored', 'John Doe');
+        //   console.log("zxzxzxzx", '@isStored')
+        //   // AsyncStorage.setItem("@isStored", "true");
+        //   // AsyncStorage.setItem("@peripheral", JSON.stringify(peripheral));
+        // }
+       
+        // AsyncStorage.getItem("@peripheral").then((data) => {
+        //   var userInfo = JSON.parse(data);
+        //   // console.tron.log("deeee",userInfo);
+        //   setUserName(userInfo?.payLoad?.userName);
+        // });
       })
       .then(data => {
         console.log('Read data:', data); // Data read from the characteristic
